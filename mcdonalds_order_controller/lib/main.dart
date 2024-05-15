@@ -80,8 +80,7 @@ class Bot {
   bool isBusy = false;
   bool _active = true;
   Timer? _timer;
-  int _remainingTime =
-      0;
+  int _remainingTime = 0;
   final Function updateUI;
   Order? currentOrder;
 
@@ -194,6 +193,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late OrderController orderController;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -208,8 +208,19 @@ class _MyAppState extends State<MyApp> {
     setState(() {});
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    List<Widget> _pages = <Widget>[
+      PendingOrdersAndBotsPage(orderController: orderController),
+      CompletedOrdersPage(orderController: orderController),
+    ];
+
     return MaterialApp(
       theme: ThemeData(
         textTheme: TextTheme(
@@ -225,81 +236,172 @@ class _MyAppState extends State<MyApp> {
         child: Scaffold(
           appBar: AppBar(
             elevation: 0,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'McDonalds Order Controller',
-                  style: TextStyle(color: Colors.black),
-                ),
-                SizedBox(width: 10),
-                StreamBuilder(
-                  stream: Stream.periodic(Duration(seconds: 1)),
-                  builder: (context, snapshot) {
-                    return Text(
-                      '${DateTime.now().hour}:${DateTime.now().minute}:${DateTime.now().second}',
-                      style: TextStyle(color: Colors.black),
-                    );
-                  },
-                ),
-              ],
+            title: Text(
+              'McDonalds Order Controller',
+              style: TextStyle(color: Colors.black),
             ),
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          orderController.newNormalOrder();
-                        },
-                        child: Text('New Normal Order'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          orderController.newVIPOrder();
-                        },
-                        child: Text('New VIP Order'),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                _buildOrderColumn(
-                    'Pending Orders', orderController.pendingOrders),
-                _buildOrderColumn(
-                    'Completed Orders', orderController.completeOrders),
-                _buildBotColumn('Bot List', orderController.bots),
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          orderController.increaseBot();
-                        },
-                        child: Text('+ Bot'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          orderController.decreaseBot();
-                        },
-                        child: Text('- Bot'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          body: _pages[_selectedIndex],
+          bottomNavigationBar: BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.pending_actions),
+                label: 'Orders & Bots', // Updated label here
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.check_circle_outline),
+                label: 'Completed Orders',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: Colors.amber[800],
+            onTap: _onItemTapped,
           ),
         ),
       ),
     );
+  }
+}
+
+class PendingOrdersAndBotsPage extends StatelessWidget {
+  final OrderController orderController;
+
+  PendingOrdersAndBotsPage({required this.orderController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Top Section: Order Buttons
+        Container(
+          padding: EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  orderController.newNormalOrder();
+                },
+                child: Text('New Normal Order'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  orderController.newVIPOrder();
+                },
+                child: Text('New VIP Order'),
+              ),
+            ],
+          ),
+        ),
+        // Middle Section: Pending Orders List
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  'Pending Orders',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: orderController.pendingOrders.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    Order order = orderController.pendingOrders[index];
+                    return order.type == 'VIP'
+                        ? VipOrderCard(order: order)
+                        : NormalOrderCard(order: order);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Bot List and Bot Buttons
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildBotColumn('Bot List', orderController.bots),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        orderController.increaseBot();
+                      },
+                      child: Text('+ Bot'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        orderController.decreaseBot();
+                      },
+                      child: Text('- Bot'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBotColumn(String title, List<Bot> bots) {
+    return Expanded(
+      child: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            SizedBox(height: 4),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: bots.length,
+                itemBuilder: (BuildContext context, int index) {
+                  Bot bot = bots[index];
+                  return ListTile(
+                    title: Text(
+                      'Bot ${bot.botId} - Remaining Time: ${bot.remainingTime} seconds',
+                    ),
+                    subtitle: bot.currentOrder != null
+                        ? Text('Processing Order ${bot.currentOrder!.orderId}')
+                        : Text('Idle'),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CompletedOrdersPage extends StatelessWidget {
+  final OrderController orderController;
+
+  CompletedOrdersPage({required this.orderController});
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildOrderColumn(
+        'Completed Orders', orderController.completeOrders);
   }
 
   Widget _buildOrderColumn(String title, List<Order> orders) {
@@ -323,6 +425,41 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+class BotsPage extends StatelessWidget {
+  final OrderController orderController;
+
+  BotsPage({required this.orderController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildBotColumn('Bot List', orderController.bots),
+        Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  orderController.increaseBot();
+                },
+                child: Text('+ Bot'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  orderController.decreaseBot();
+                },
+                child: Text('- Bot'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildBotColumn(String title, List<Bot> bots) {
     return Container(
@@ -337,20 +474,22 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
           SizedBox(height: 4),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: bots.length,
-            itemBuilder: (BuildContext context, int index) {
-              Bot bot = bots[index];
-              return ListTile(
-                title: Text(
-                  'Bot ${bot.botId} - Remaining Time: ${bot.remainingTime} seconds',
-                ),
-                subtitle: bot.currentOrder != null
-                    ? Text('Processing Order ${bot.currentOrder!.orderId}')
-                    : Text('Idle'),
-              );
-            },
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: bots.length,
+              itemBuilder: (BuildContext context, int index) {
+                Bot bot = bots[index];
+                return ListTile(
+                  title: Text(
+                    'Bot ${bot.botId} - Remaining Time: ${bot.remainingTime} seconds',
+                  ),
+                  subtitle: bot.currentOrder != null
+                      ? Text('Processing Order ${bot.currentOrder!.orderId}')
+                      : Text('Idle'),
+                );
+              },
+            ),
           ),
         ],
       ),
