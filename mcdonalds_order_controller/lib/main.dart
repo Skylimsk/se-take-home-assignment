@@ -5,7 +5,7 @@ enum OrderStatus { PENDING, COMPLETE }
 
 class Order {
   final int orderId;
-  final String type; // Normal or VIP
+  final String type;
   OrderStatus status;
 
   Order(
@@ -81,7 +81,7 @@ class Bot {
   bool _active = true;
   Timer? _timer;
   int _remainingTime =
-      0; // This should hold the remaining processing time for an order
+      0;
   final Function updateUI;
   Order? currentOrder;
 
@@ -113,7 +113,7 @@ class Bot {
     if (!_active) return;
     isBusy = true;
     currentOrder = order;
-    _remainingTime = 10; // Assuming a fixed processing time for simplicity
+    _remainingTime = 10;
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (_remainingTime > 0) {
         _remainingTime--;
@@ -132,14 +132,13 @@ class Bot {
     });
   }
 
-  int get remainingTime => _remainingTime; // Getter for remaining time
+  int get remainingTime => _remainingTime;
 }
 
 void main() {
   runApp(MyApp());
 }
 
-// VIP Order Card
 class VipOrderCard extends StatelessWidget {
   final Order order;
 
@@ -164,7 +163,6 @@ class VipOrderCard extends StatelessWidget {
   }
 }
 
-// Normal Order Card
 class NormalOrderCard extends StatelessWidget {
   final Order order;
 
@@ -306,7 +304,6 @@ class _MyAppState extends State<MyApp> {
 
   Widget _buildOrderColumn(String title, List<Order> orders) {
     return Container(
-      // Wrap the Card with a Container // Set the background color to white
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -329,7 +326,6 @@ class _MyAppState extends State<MyApp> {
 
   Widget _buildBotColumn(String title, List<Bot> bots) {
     return Container(
-      // Wrap the Card with a Container // Set the background color to white
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
